@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Gym Management System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h2>Admin Dashboard</h2>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Members</h5>
+                <h2 class="display-4">{{ total_members }}</h2>
+                <p class="mb-0">
+                    <i class="fas fa-users"></i> Active gym members
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Today's Attendance</h5>
+                <h2 class="display-4">{{ today_attendance }}</h2>
+                <p class="mb-0">
+                    <i class="fas fa-check-circle"></i> Members present today
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">Active Plans</h5>
+                <h2 class="display-4">{{ active_plans }}</h2>
+                <p class="mb-0">
+                    <i class="fas fa-clipboard-list"></i> Available membership plans
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h5 class="card-title">Expiring Soon</h5>
+                <h2 class="display-4">{{ expiring_memberships|length }}</h2>
+                <p class="mb-0">
+                    <i class="fas fa-clock"></i> Plans expiring in 7 days
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('add_member') }}" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i> Add Member
+                    </a>
+                    <a href="{{ url_for('add_plan') }}" class="btn btn-success">
+                        <i class="fas fa-plus-circle"></i> Add Plan
+                    </a>
+                    <a href="{{ url_for('view_members') }}" class="btn btn-info">
+                        <i class="fas fa-users"></i> View All Members
+                    </a>
+                    <a href="{{ url_for('view_staff') }}" class="btn btn-warning">
+                        <i class="fas fa-user-tie"></i> Staff Management
+                    </a>
+                    <a href="{{ url_for('announcements') }}" class="btn btn-success">
+                        <i class="fab fa-whatsapp"></i> Send Announcements
+                    </a>
+                    <a href="{{ url_for('plans') }}" class="btn btn-secondary">
+                        <i class="fas fa-clipboard-list"></i> View All Plans
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Expiring Memberships -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-warning text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle"></i> Expiring Memberships
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Member</th>
+                                <th>Plan</th>
+                                <th>Expiry Date</th>
+                                <th>Days Left</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for membership in expiring_memberships %}
+                                {% set days_left = (membership.end_date - today).days %}
+                                <tr>
+                                    <td>{{ membership.user.username }}</td>
+                                    <td>{{ membership.plan.name }}</td>
+                                    <td>{{ membership.end_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <span class="badge {% if days_left <= 3 %}bg-danger{% else %}bg-warning{% endif %}">
+                                            {{ days_left }} days
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('member_details', user_id=membership.user.id) }}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-info-circle"></i> Member Details
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if not expiring_memberships %}
+                    <div class="alert alert-success">
+                        No memberships expiring in the next 7 days.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Members -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Members</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Join Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for member in recent_members %}
+                                <tr>
+                                    <td>{{ member.username }}</td>
+                                    <td>{{ member.email }}</td>
+                                    <td>{{ member.phone if member.phone else 'No phone' }}</td>
+                                    <td>{{ member.join_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <a href="{{ url_for('member_details', user_id=member.id) }}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-info-circle"></i> Details
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if not recent_members %}
+                    <div class="alert alert-info">
+                        No members added yet.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Membership Expiry Reminders -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-warning text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-bell"></i> Membership Expiry Reminders
+                    <a href="{{ url_for('send_expiry_reminders') }}" class="btn btn-light btn-sm float-end">
+                        <i class="fab fa-whatsapp"></i> Send Reminders
+                    </a>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="alert alert-danger">
+                            <h6 class="alert-heading">Expiring Tomorrow</h6>
+                            <h3 class="mb-0">{{ expiry_counts.one_day }}</h3>
+                            <small>Members</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="alert alert-warning">
+                            <h6 class="alert-heading">Expiring in 3 Days</h6>
+                            <h3 class="mb-0">{{ expiry_counts.three_days }}</h3>
+                            <small>Members</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading">Expiring in 7 Days</h6>
+                            <h3 class="mb-0">{{ expiry_counts.seven_days }}</h3>
+                            <small>Members</small>
+                        </div>
+                    </div>
+                </div>
+                <p class="mb-0">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i> 
+                        Click "Send Reminders" to send WhatsApp notifications to members with expiring memberships.
+                    </small>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Send Announcements{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Send WhatsApp Announcements</h2>
+
+    <!-- Member Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Members</h5>
+                    <p class="card-text display-4">{{ total_members }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Active Members</h5>
+                    <p class="card-text display-4">{{ active_members }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Expired Members</h5>
+                    <p class="card-text display-4">{{ expired_members }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Announcement Form -->
+    <div class="card">
+        <div class="card-body">
+            <form id="announcementForm" method="POST">
+                <div class="mb-3">
+                    <label for="recipient_type" class="form-label">Send to:</label>
+                    <select class="form-select" id="recipient_type" name="recipient_type" required>
+                        <option value="all">All Members ({{ total_members }})</option>
+                        <option value="active">Active Members ({{ active_members }})</option>
+                        <option value="expired">Expired Members ({{ expired_members }})</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="message" class="form-label">Announcement Message:</label>
+                    <textarea class="form-control" id="message" name="message" rows="4" required></textarea>
+                </div>
+                <div class="alert alert-info">
+                    <h5>Important Notes:</h5>
+                    <ul>
+                        <li>Messages will only be sent to members with valid phone numbers</li>
+                        <li>Your browser must be logged into WhatsApp Web</li>
+                        <li>Keep the browser window active during message sending</li>
+                        <li>There will be a short delay between messages to avoid rate limiting</li>
+                    </ul>
+                </div>
+                <button type="submit" class="btn btn-primary">Send Announcement</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('announcementForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const recipientSelect = document.getElementById('recipient_type');
+    const selectedOption = recipientSelect.options[recipientSelect.selectedIndex];
+    const recipientCount = parseInt(selectedOption.text.match(/\((\d+)\)/)[1]);
+    
+    if (confirm(`Are you sure you want to send this announcement to ${recipientCount} members? This action cannot be undone.`)) {
+        this.submit();
+    }
+});
+</script>
+{% endblock %} 

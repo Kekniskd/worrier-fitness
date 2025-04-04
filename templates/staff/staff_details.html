@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Staff Details - {{ staff.name }} - Gym Management System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2>Staff Details: {{ staff.name }}</h2>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="{{ url_for('view_staff') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Staff List
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Staff Information -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Personal Information</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Position:</strong> {{ staff.position }}</p>
+                <p><strong>Email:</strong> {{ staff.email }}</p>
+                <p><strong>Phone:</strong> {{ staff.phone if staff.phone else 'Not provided' }}</p>
+                <p><strong>Address:</strong> {{ staff.address if staff.address else 'Not provided' }}</p>
+                <p><strong>Join Date:</strong> {{ staff.join_date.strftime('%Y-%m-%d') }}</p>
+                <p><strong>Monthly Salary:</strong> ₹{{ "%.2f"|format(staff.salary) }}</p>
+                <p><strong>Status:</strong> 
+                    <span class="badge {% if staff.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                        {{ 'Active' if staff.is_active else 'Inactive' }}
+                    </span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Attendance -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Attendance (Last 30 Days)</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Check In</th>
+                                <th>Check Out</th>
+                                <th>Status</th>
+                                <th>Duration</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for attendance in attendance_history %}
+                                <tr>
+                                    <td>{{ attendance.date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ attendance.check_in.strftime('%H:%M') }}</td>
+                                    <td>
+                                        {% if attendance.check_out %}
+                                            {{ attendance.check_out.strftime('%H:%M') }}
+                                        {% else %}
+                                            <span class="badge bg-warning">Not checked out</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ {
+                                            'present': 'success',
+                                            'absent': 'danger',
+                                            'late': 'warning',
+                                            'half-day': 'info'
+                                        }[attendance.status] }}">
+                                            {{ attendance.status.title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if attendance.check_out %}
+                                            {% set duration = (attendance.check_out - attendance.check_in).total_seconds() / 3600 %}
+                                            {{ "%.1f"|format(duration) }} hours
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if not attendance_history %}
+                    <div class="alert alert-info">No attendance records found.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment History -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Payment History</h5>
+                <a href="{{ url_for('record_staff_payment', staff_id=staff.id) }}" class="btn btn-sm btn-success">
+                    <i class="fas fa-plus"></i> Record Payment
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Payment Date</th>
+                                <th>Amount</th>
+                                <th>For Month</th>
+                                <th>Payment Method</th>
+                                <th>Status</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in payment_history %}
+                                <tr>
+                                    <td>{{ payment.payment_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>₹{{ "%.2f"|format(payment.amount) }}</td>
+                                    <td>{{ payment.payment_for_month.strftime('%B %Y') }}</td>
+                                    <td>{{ payment.payment_method }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ {
+                                            'pending': 'warning',
+                                            'paid': 'success',
+                                            'delayed': 'danger'
+                                        }[payment.status] }}">
+                                            {{ payment.status.title() }}
+                                        </span>
+                                    </td>
+                                    <td>{{ payment.notes if payment.notes else '-' }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if not payment_history %}
+                    <div class="alert alert-info">No payment records found.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

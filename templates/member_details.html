@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Member Details - {{ member.username }} - Gym Management System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2>Member Details: {{ member.username }}</h2>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="{{ url_for('view_members') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Members
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Member Information -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Personal Information</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Email:</strong> {{ member.email }}</p>
+                <p><strong>Phone:</strong> {{ member.phone if member.phone else 'Not provided' }}</p>
+                <p><strong>Address:</strong> {{ member.address if member.address else 'Not provided' }}</p>
+                <p><strong>Join Date:</strong> {{ member.join_date.strftime('%Y-%m-%d') }}</p>
+                <p>
+                    <strong>Member ID:</strong> 
+                    <span class="badge bg-primary">{{ member.member_id }}</span>
+                    <small class="text-muted d-block mt-1">Use this ID to mark attendance</small>
+                </p>
+                {% if member.trainer %}
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading"><i class="fas fa-user-tie"></i> Personal Trainer</h6>
+                        <p class="mb-0">
+                            <strong>{{ member.trainer.name }}</strong><br>
+                            <small>{{ member.trainer.email }}<br>
+                            {{ member.trainer.phone if member.trainer.phone else 'No phone' }}</small>
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Membership Information -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Membership Details</h5>
+            </div>
+            <div class="card-body">
+                {% if member.membership %}
+                    {% set current_membership = member.membership[0] %}
+                    <p><strong>Current Plan:</strong> {{ current_membership.plan.name }}</p>
+                    <p><strong>Start Date:</strong> {{ current_membership.start_date.strftime('%Y-%m-%d') }}</p>
+                    <p><strong>End Date:</strong> {{ current_membership.end_date.strftime('%Y-%m-%d') }}</p>
+                    <p><strong>Status:</strong> 
+                        <span class="badge {% if current_membership.active %}bg-success{% else %}bg-danger{% endif %}">
+                            {{ 'Active' if current_membership.active else 'Inactive' }}
+                        </span>
+                    </p>
+                    <p><strong>Price:</strong> ₹{{ "%.2f"|format(current_membership.plan.price) }}</p>
+                {% else %}
+                    <div class="alert alert-warning">
+                        No active membership plan found.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Attendance -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Attendance</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set sorted_attendance = member.attendances|sort(attribute='date', reverse=true) %}
+                            {% for attendance in sorted_attendance[:10] %}
+                                <tr>
+                                    <td>{{ attendance.date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ attendance.date.strftime('%H:%M') }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if not member.attendances %}
+                    <div class="alert alert-info">No attendance records found.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
