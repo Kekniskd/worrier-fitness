@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Members - Gym Management System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2>Members</h2>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="{{ url_for('add_member') }}" class="btn btn-primary">
+            <i class="fas fa-user-plus"></i> Add New Member
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Member ID</th>
+                        <th>Name</th>
+                        <th>Plan</th>
+                        <th>Expiry Date</th>
+                        <th>Status</th>
+                        <th>Today's Attendance</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for member in members %}
+                        {% set active_membership = member.membership|selectattr('active')|first %}
+                        <tr>
+                            <td>{{ member.member_id }}</td>
+                            <td>{{ member.username }}</td>
+                            <td>
+                                {% if active_membership %}
+                                    {{ active_membership.plan.name }}
+                                {% else %}
+                                    No active plan
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if active_membership %}
+                                    {{ active_membership.end_date.strftime('%Y-%m-%d') }}
+                                    {% if active_membership.end_date.date() < today %}
+                                        <span class="badge bg-danger">Expired</span>
+                                    {% endif %}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if active_membership %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if member.id in attendance_data %}
+                                    <span class="badge bg-success">Present</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Not Marked</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{{ url_for('member_details', user_id=member.id) }}" class="btn btn-info btn-sm">
+                                        <i class="fas fa-info-circle"></i> Details
+                                    </a>
+                                    {% if active_membership %}
+                                        <a href="{{ url_for('renew_membership', member_id=member.id) }}" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-sync"></i> Renew
+                                        </a>
+                                    {% endif %}
+                                    <form method="POST" action="{{ url_for('delete_member', user_id=member.id) }}" 
+                                          onsubmit="return confirm('Are you sure you want to delete this member?');" 
+                                          style="display: inline;">
+                                        <button type="submit" class="btn btn-danger btn-sm">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if not members %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> No members found.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

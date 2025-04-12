@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Renew Membership - {{ member.name }} - Gym Management System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2>Renew Membership</h2>
+        <p class="text-muted">Renewing membership for {{ member.name }}</p>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="{{ url_for('member_details', user_id=member.id) }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Member Details
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="plan_id" class="form-label">Select Membership Plan</label>
+                        <select class="form-select" id="plan_id" name="plan_id" required onchange="updatePriceDisplay()">
+                            <option value="">Choose a plan...</option>
+                            {% for plan in plans %}
+                                <option value="{{ plan.id }}" data-price="{{ plan.price }}" data-duration="{{ plan.duration }}">
+                                    {{ plan.name }} - ₹{{ plan.price }} for {{ plan.duration }} months
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Plan Price</label>
+                        <div class="form-control-plaintext" id="price_display">
+                            Select a plan to see the price
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="payment_method" class="form-label">Payment Method</label>
+                        <select class="form-select" id="payment_method" name="payment_method" required>
+                            <option value="">Select payment method...</option>
+                            <option value="cash">Cash</option>
+                            <option value="card">Card</option>
+                            <option value="upi">UPI</option>
+                            <option value="bank_transfer">Bank Transfer</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-sync"></i> Renew Membership
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Member Details</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-5">Name</dt>
+                    <dd class="col-sm-7">{{ member.name }}</dd>
+
+                    <dt class="col-sm-5">Current Plan</dt>
+                    <dd class="col-sm-7">{{ member.membership_plan.name if member.membership_plan else 'None' }}</dd>
+
+                    <dt class="col-sm-5">Expiry Date</dt>
+                    <dd class="col-sm-7">
+                        {% if member.membership_expiry %}
+                            {{ member.membership_expiry.strftime('%Y-%m-%d') }}
+                            {% if member.membership_expiry < today %}
+                                <span class="badge bg-danger">Expired</span>
+                            {% endif %}
+                        {% else %}
+                            No active membership
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-5">Status</dt>
+                    <dd class="col-sm-7">
+                        <span class="badge bg-{{ 'success' if member.is_active else 'danger' }}">
+                            {{ 'Active' if member.is_active else 'Inactive' }}
+                        </span>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updatePriceDisplay() {
+    const planSelect = document.getElementById('plan_id');
+    const priceDisplay = document.getElementById('price_display');
+    const selectedOption = planSelect.options[planSelect.selectedIndex];
+    
+    if (selectedOption && selectedOption.value) {
+        const price = selectedOption.getAttribute('data-price');
+        const duration = selectedOption.getAttribute('data-duration');
+        if (price) {
+            priceDisplay.innerHTML = `₹${parseFloat(price).toFixed(2)} for ${duration} months`;
+        } else {
+            priceDisplay.innerHTML = 'Price not available';
+        }
+    } else {
+        priceDisplay.innerHTML = 'Select a plan to see the price';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    updatePriceDisplay();
+    
+    // Add form validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const planSelect = document.getElementById('plan_id');
+        const paymentMethod = document.getElementById('payment_method');
+        
+        if (!planSelect.value) {
+            e.preventDefault();
+            alert('Please select a membership plan.');
+            return false;
+        }
+        
+        if (!paymentMethod.value) {
+            e.preventDefault();
+            alert('Please select a payment method.');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %} 

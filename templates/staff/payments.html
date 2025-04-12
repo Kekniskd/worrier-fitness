@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Staff Payments - Gym Management System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2>Staff Payments</h2>
+        <p class="text-muted">Manage staff salary payments for {{ current_month.strftime('%B %Y') }}</p>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="{{ url_for('view_staff') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Staff List
+        </a>
+    </div>
+</div>
+
+<!-- Payment Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Staff</h5>
+                <h2>{{ staff_members|length }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Paid</h5>
+                <h2>{{ payment_data|length }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <h5 class="card-title">Pending</h5>
+                <h2>{{ staff_members|length - payment_data|length }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Amount</h5>
+                <h2>₹{{ payment_data.values()|sum(attribute='amount')|default(0, true)|round(2) }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Staff Name</th>
+                        <th>Position</th>
+                        <th>Salary</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for staff in staff_members %}
+                        <tr>
+                            <td>{{ staff.name }}</td>
+                            <td>{{ staff.position }}</td>
+                            <td>₹{{ staff.salary }}</td>
+                            <td>
+                                {% if staff.id in payment_data %}
+                                    {% set payment = payment_data[staff.id] %}
+                                    <span class="badge bg-{{ 'success' if payment.status == 'paid' else 'warning' if payment.status == 'pending' else 'danger' }}">
+                                        {{ payment.status|title }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Not Processed</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if staff.id not in payment_data %}
+                                    <a href="{{ url_for('record_staff_payment', staff_id=staff.id) }}" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-money-bill"></i> Record Payment
+                                    </a>
+                                {% else %}
+                                    <button class="btn btn-secondary btn-sm" disabled>
+                                        <i class="fas fa-check"></i> Payment Recorded
+                                    </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if not staff_members %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> No active staff members found.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

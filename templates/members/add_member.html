@@ -3,67 +3,72 @@
 {% block title %}Add Member - Gym Management System{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-md-12">
-        <h2>Add New Member</h2>
-    </div>
-</div>
-
 <div class="row">
     <div class="col-md-8 offset-md-2">
         <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Add New Member</h4>
+            </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('add_member') }}">
+                <form method="POST">
                     <div class="mb-3">
                         <label for="username" class="form-label">Username</label>
                         <input type="text" class="form-control" id="username" name="username" required>
                     </div>
-
+                    
                     <div class="mb-3">
                         <label for="email" class="form-label">Email</label>
                         <input type="email" class="form-control" id="email" name="email" required>
                     </div>
-
+                    
                     <div class="mb-3">
-                        <label for="phone" class="form-label">Phone Number</label>
-                        <input type="tel" class="form-control" id="phone" name="phone">
+                        <label for="phone" class="form-label">Phone</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" required>
                     </div>
-
+                    
                     <div class="mb-3">
                         <label for="address" class="form-label">Address</label>
-                        <textarea class="form-control" id="address" name="address" rows="3"></textarea>
+                        <textarea class="form-control" id="address" name="address" rows="2"></textarea>
                     </div>
-
+                    
                     <div class="mb-3">
                         <label for="plan_id" class="form-label">Membership Plan</label>
                         <select class="form-select" id="plan_id" name="plan_id" required>
-                            <option value="">Select Plan</option>
+                            <option value="">Select a plan</option>
                             {% for plan in plans %}
-                                <option value="{{ plan.id }}">{{ plan.name }} - ₹{{ "%.2f"|format(plan.price) }} for {{ plan.duration }} months</option>
+                                <option value="{{ plan.id }}" {% if plan.id == selected_plan_id %}selected{% endif %}>
+                                    {{ plan.name }} - ₹{{ "%.2f"|format(plan.price) }} for {{ plan.duration }} months
+                                </option>
                             {% endfor %}
                         </select>
                     </div>
-
+                    
                     <div class="mb-3">
-                        <label for="trainer_id" class="form-label">Personal Trainer (Optional)</label>
+                        <label for="trainer_id" class="form-label">Assign Trainer (Optional)</label>
                         <select class="form-select" id="trainer_id" name="trainer_id">
-                            <option value="">No Personal Trainer</option>
+                            <option value="">No trainer</option>
                             {% for trainer in trainers %}
-                                <option value="{{ trainer.id }}">{{ trainer.name }} - {{ trainer.position }}</option>
+                                <option value="{{ trainer.id }}">
+                                    {{ trainer.name }} - {{ trainer.position }}
+                                </option>
                             {% endfor %}
                         </select>
-                        <div class="form-text">Assign a personal trainer to this member</div>
                     </div>
-
+                    
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-user-plus"></i> Add Member
                         </button>
                         <a href="{{ url_for('view_members') }}" class="btn btn-secondary">
-                            <i class="fas fa-times"></i> Cancel
+                            <i class="fas fa-arrow-left"></i> Back to Members
                         </a>
                     </div>
                 </form>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle"></i> Default password for new members will be: member123
+                </small>
             </div>
         </div>
     </div>

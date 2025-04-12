@@ -4,7 +4,16 @@ from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
-class User(UserMixin, db.Model):
+class Moderator(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(120), nullable=False)
+    role = db.Column(db.String(20), default='moderator')  # moderator, admin
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    last_login = db.Column(db.DateTime)
+
+class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     member_id = db.Column(db.String(10), unique=True, nullable=True)  # For attendance marking
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -13,7 +22,6 @@ class User(UserMixin, db.Model):
     phone = db.Column(db.String(20), nullable=True)
     address = db.Column(db.Text, nullable=True)
     join_date = db.Column(db.DateTime, nullable=True, default=datetime.utcnow)
-    is_admin = db.Column(db.Boolean, default=False)
     trainer_id = db.Column(db.Integer, db.ForeignKey('staff.id'), nullable=True)
     trainer = db.relationship('Staff', backref=db.backref('trainees', lazy=True))
     attendances = db.relationship('Attendance', backref='user', lazy=True)

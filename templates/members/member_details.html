@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Member Details - {{ member.name }} - Gym Management System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2>Member Details</h2>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="{{ url_for('view_members') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Members
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Personal Information</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-4">Member ID</dt>
+                    <dd class="col-sm-8">{{ member.member_id }}</dd>
+
+                    <dt class="col-sm-4">Name</dt>
+                    <dd class="col-sm-8">{{ member.username }}</dd>
+
+                    <dt class="col-sm-4">Email</dt>
+                    <dd class="col-sm-8">{{ member.email }}</dd>
+
+                    <dt class="col-sm-4">Phone</dt>
+                    <dd class="col-sm-8">{{ member.phone }}</dd>
+
+                    <dt class="col-sm-4">Address</dt>
+                    <dd class="col-sm-8">{{ member.address }}</dd>
+
+                    <dt class="col-sm-4">Join Date</dt>
+                    <!-- <dd class="col-sm-8">{{ member.created_at.strftime('%Y-%m-%d') }}</dd> -->
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Membership Details</h5>
+            </div>
+            <div class="card-body">
+                {% set active_membership = member.membership|selectattr('active')|first %}
+                <dl class="row">
+                    <dt class="col-sm-4">Current Plan</dt>
+                    <dd class="col-sm-8">
+                        {% if active_membership %}
+                            {{ active_membership.plan.name }}
+                        {% else %}
+                            No active plan
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-4">Status</dt>
+                    <dd class="col-sm-8">
+                        {% if active_membership %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-danger">Inactive</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-4">Start Date</dt>
+                    <dd class="col-sm-8">
+                        {% if active_membership %}
+                            {{ active_membership.start_date.strftime('%Y-%m-%d') }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-4">Expiry Date</dt>
+                    <dd class="col-sm-8">
+                        {% if active_membership %}
+                            {{ active_membership.end_date.strftime('%Y-%m-%d') }}
+                            {% if active_membership.end_date < today %}
+                                <span class="badge bg-danger">Expired</span>
+                            {% endif %}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </dd>
+                </dl>
+
+                <div class="mt-3">
+                    <a href="{{ url_for('renew_membership', member_id=member.id) }}" class="btn btn-primary">
+                        <i class="fas fa-sync"></i> Renew Membership
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {% if member.trainer %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Trainer Information</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-4">Trainer Name</dt>
+                    <dd class="col-sm-8">{{ member.trainer.name }}</dd>
+
+                    <dt class="col-sm-4">Contact</dt>
+                    <dd class="col-sm-8">{{ member.trainer.phone }}</dd>
+                </dl>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Recent Attendance</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Check-in Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for attendance in member.attendance[-10:]|reverse %}
+                            <tr>
+                                <td>{{ attendance.date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ attendance.date.strftime('%I:%M %p') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if not member.attendance %}
+                    <div class="alert alert-info">No attendance records found.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

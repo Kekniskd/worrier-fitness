@@ -8,6 +8,9 @@
         <h2>Staff Management</h2>
     </div>
     <div class="col-md-6 text-end">
+        <a href="{{ url_for('staff_attendance') }}" class="btn btn-success me-2">
+            <i class="fas fa-clipboard-check"></i> Manage Attendance
+        </a>
         <a href="{{ url_for('add_staff') }}" class="btn btn-primary">
             <i class="fas fa-user-plus"></i> Add New Staff
         </a>
@@ -25,7 +28,7 @@
                                 <th>Name</th>
                                 <th>Position</th>
                                 <th>Contact Info</th>
-                                <th>Today's Status</th>
+                                <th>Status</th>
                                 <th>Salary</th>
                                 <th>Actions</th>
                             </tr>
@@ -45,40 +48,37 @@
                                     <td>
                                         {% if staff.id in attendance_data %}
                                             {% set attendance = attendance_data[staff.id] %}
-                                            {% if attendance.check_out %}
-                                                <span class="badge bg-success">Completed Shift</span>
-                                            {% else %}
-                                                <span class="badge bg-primary">Checked In</span>
-                                                <form method="POST" action="{{ url_for('mark_staff_attendance', staff_id=staff.id) }}" class="d-inline">
-                                                    <button type="submit" class="btn btn-sm btn-outline-primary ms-2">
-                                                        <i class="fas fa-sign-out-alt"></i> Check Out
-                                                    </button>
-                                                </form>
-                                            {% endif %}
+                                            <span class="badge bg-{{ 'success' if attendance.status == 'present' else 'warning' if attendance.status == 'late' else 'danger' }}">
+                                                {{ attendance.status|title }}
+                                            </span>
                                         {% else %}
-                                            <form method="POST" action="{{ url_for('mark_staff_attendance', staff_id=staff.id) }}" class="d-inline">
-                                                <button type="submit" class="btn btn-sm btn-outline-success">
-                                                    <i class="fas fa-sign-in-alt"></i> Check In
-                                                </button>
-                                            </form>
+                                            <span class="badge bg-secondary">Not Marked</span>
                                         {% endif %}
                                     </td>
                                     <td>₹{{ "%.2f"|format(staff.salary) }}</td>
                                     <td>
                                         <div class="btn-group">
-                                            <a href="{{ url_for('staff_details', staff_id=staff.id) }}" class="btn btn-sm btn-info">
+                                            <a href="{{ url_for('staff_details', staff_id=staff.id) }}" class="btn btn-info btn-sm">
                                                 <i class="fas fa-info-circle"></i> Details
                                             </a>
                                             <a href="{{ url_for('record_staff_payment', staff_id=staff.id) }}" class="btn btn-sm btn-success">
                                                 <i class="fas fa-money-bill"></i> Payment
                                             </a>
-                                            <form method="POST" action="{{ url_for('delete_staff', staff_id=staff.id) }}" 
-                                                  onsubmit="return confirm('Are you sure you want to delete this staff member? This action cannot be undone.');" 
-                                                  style="display: inline;">
-                                                <button type="submit" class="btn btn-sm btn-danger">
-                                                    <i class="fas fa-trash"></i>
+                                            {% if staff.is_active %}
+                                            <form method="POST" action="{{ url_for('deactivate_staff', staff_id=staff.id) }}" class="d-inline" 
+                                                  onsubmit="return confirm('Are you sure you want to deactivate {{ staff.name }}?');">
+                                                <button type="submit" class="btn btn-danger btn-sm">
+                                                    <i class="fas fa-user-times"></i> Deactivate
                                                 </button>
                                             </form>
+                                            {% else %}
+                                            <form method="POST" action="{{ url_for('reactivate_staff', staff_id=staff.id) }}" class="d-inline"
+                                                  onsubmit="return confirm('Are you sure you want to reactivate {{ staff.name }}?');">
+                                                <button type="submit" class="btn btn-success btn-sm">
+                                                    <i class="fas fa-user-check"></i> Reactivate
+                                                </button>
+                                            </form>
+                                            {% endif %}
                                         </div>
                                     </td>
                                 </tr>
@@ -89,7 +89,7 @@
                 
                 {% if not staff_members %}
                     <div class="alert alert-info">
-                        No staff members found. Add your first staff member using the button above.
+                        <i class="fas fa-info-circle"></i> No staff members found. Add your first staff member using the button above.
                     </div>
                 {% endif %}
             </div>

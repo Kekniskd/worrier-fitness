@@ -2,12 +2,13 @@ from app import app
 from models import db, User, Plan, Membership, Staff
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta
+import random  # Added for random start dates
 
 def add_sample_data():
     with app.app_context():
         # First, delete any existing data
         Membership.query.delete()
-        User.query.filter_by(is_admin=False).delete()
+        User.query.delete()  # Remove filter since we no longer have admin users
         Staff.query.delete()
         Plan.query.delete()
         db.session.commit()
@@ -43,7 +44,6 @@ def add_sample_data():
         # Add plans
         db_plans = []
         for plan_data in plans:
-            # Ensure duration is at least 1 month
             plan_data['duration'] = max(1, plan_data['duration'])
             plan = Plan(**plan_data)
             db.session.add(plan)
@@ -68,6 +68,15 @@ def add_sample_data():
                 'salary': 32000.00,
                 'address': '456 Health Avenue, City',
                 'is_active': True
+            },
+            {
+                'name': 'Mike Wilson',
+                'email': 'mike.trainer@gym.com',
+                'phone': '9876543212',
+                'position': 'Senior Trainer',
+                'salary': 45000.00,
+                'address': '789 Muscle Avenue, City',
+                'is_active': True
             }
         ]
 
@@ -89,8 +98,8 @@ def add_sample_data():
                     'email': 'rajesh@example.com',
                     'phone': '9876543001',
                     'address': '789 Member Lane, City',
-                    'trainer_id': db_staff[0].id if db_staff else None,  # Safely get trainer ID
-                    'plan_id': db_plans[2].id if len(db_plans) > 2 else db_plans[0].id  # Safely get plan ID
+                    'trainer_id': db_staff[0].id if db_staff else None,
+                    'plan_id': db_plans[2].id if len(db_plans) > 2 else db_plans[0].id
                 },
                 {
                     'username': 'priya_sharma',
@@ -105,7 +114,7 @@ def add_sample_data():
                     'email': 'amit@example.com',
                     'phone': '9876543003',
                     'address': '202 Gym Street, City',
-                    'trainer_id': None,
+                    'trainer_id': db_staff[2].id if len(db_staff) > 2 else None,
                     'plan_id': db_plans[0].id
                 },
                 {
@@ -123,6 +132,14 @@ def add_sample_data():
                     'address': '404 Fitness Circle, City',
                     'trainer_id': db_staff[1].id if len(db_staff) > 1 else None,
                     'plan_id': db_plans[1].id if len(db_plans) > 1 else db_plans[0].id
+                },
+                {
+                    'username': 'anita_desai',
+                    'email': 'anita@example.com',
+                    'phone': '9876543006',
+                    'address': '505 Wellness Street, City',
+                    'trainer_id': db_staff[2].id if len(db_staff) > 2 else None,
+                    'plan_id': db_plans[2].id if len(db_plans) > 2 else db_plans[0].id
                 }
             ]
 
@@ -134,7 +151,6 @@ def add_sample_data():
                 # Create member with sequential ID
                 member = User(
                     password=generate_password_hash('member123'),
-                    is_admin=False,
                     member_id=str(100001 + i).zfill(6),  # Generate sequential IDs starting from 100001
                     trainer_id=trainer_id,
                     **member_data
@@ -145,33 +161,50 @@ def add_sample_data():
                 # Create membership
                 start_date = datetime.utcnow()
                 plan = next(p for p in db_plans if p.id == plan_id)
+                
+                # Add variety to membership start dates
+                start_date = start_date - timedelta(days=random.randint(0, 60))
+                end_date = start_date + timedelta(days=plan.duration * 30)
+                
                 membership = Membership(
                     user_id=member.id,
                     plan_id=plan_id,
                     start_date=start_date,
-                    end_date=start_date + timedelta(days=max(1, plan.duration) * 30),  # Ensure at least 1 day
+                    end_date=end_date,
                     active=True
                 )
                 db.session.add(membership)
 
             # Commit all changes
             db.session.commit()
-            print("Sample data added successfully!")
-            print("\nStaff Members:")
+            
+            # Print summary
+            print("\n=== Sample Data Added Successfully ===\n")
+            
+            print("Staff Members:")
             for staff in db_staff:
                 print(f"- {staff.name} ({staff.position})")
+                print(f"  Email: {staff.email}")
+                print(f"  Phone: {staff.phone}\n")
             
-            print("\nPlans:")
+            print("Plans:")
             for plan in db_plans:
-                print(f"- {plan.name}: ₹{plan.price} for {plan.duration} months")
+                print(f"- {plan.name}")
+                print(f"  Duration: {plan.duration} months")
+                print(f"  Price: ₹{plan.price:.2f}")
+                print(f"  Description: {plan.description}\n")
             
-            print("\nMembers (with their Member IDs):")
-            members = User.query.filter_by(is_admin=False).all()
+            print("Members:")
+            members = User.query.all()
             for member in members:
-                print(f"- {member.username} (ID: {member.member_id})")
-                if member.trainer:
-                    print(f"  Trainer: {member.trainer.name}")
-                print(f"  Plan: {member.membership[0].plan.name}")
+                print(f"- {member.username}")
+                print(f"  Member ID: {member.member_id}")
+                print(f"  Email: {member.email}")
+                print(f"  Phone: {member.phone}")
+                if member.membership:
+                    print(f"  Start Date: {membership.start_date.strftime('%Y-%m-%d')}")
+                    print(f"  End Date: {membership.end_date.strftime('%Y-%m-%d')}")
+                print()
                 
         except Exception as e:
             db.session.rollback()
