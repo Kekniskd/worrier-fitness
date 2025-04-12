@@ -1,6 +1,7 @@
 from app import app
 from models import db, Moderator
 from werkzeug.security import generate_password_hash
+from flask_login import current_user
 
 def create_moderators():
     with app.app_context():
@@ -41,6 +42,10 @@ def create_moderators():
         except Exception as e:
             db.session.rollback()
             print(f"Error creating moderator accounts: {str(e)}")
+
+def check_moderator_attendance_access():
+    """Check if the current user has moderator access for attendance"""
+    return current_user.is_authenticated and (current_user.role == 'moderator' or current_user.role == 'admin')
 
 if __name__ == '__main__':
     create_moderators() 

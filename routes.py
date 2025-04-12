@@ -354,10 +354,12 @@ def logout():
     return redirect(url_for('login'))
 
 def check_admin_access():
-    """Check if the current user is an admin moderator"""
-    if not isinstance(current_user, Moderator):
-        return False
-    return current_user.role == 'admin'
+    """Check if the current user has admin access"""
+    return current_user.is_authenticated and current_user.role == 'admin'
+
+def check_moderator_attendance_access():
+    """Check if the current user has moderator access for attendance"""
+    return current_user.is_authenticated and (current_user.role == 'moderator' or current_user.role == 'admin')
 
 @app.route('/staff')
 @login_required
@@ -438,91 +440,88 @@ def staff_details(staff_id):
                          attendance_history=attendance_history,
                          payment_history=payment_history)
 
-@app.route('/staff/attendance', methods=['GET', 'POST'])
+@app.route('/staff/attendance')
 @login_required
 def staff_attendance():
-    if not check_admin_access():
-        flash('Access denied. Admin privileges required.', 'danger')
+    if not check_moderator_attendance_access():
+        flash('Access denied. Moderator privileges required.', 'danger')
         return redirect(url_for('dashboard'))
     
-    staff_members = Staff.query.filter_by(is_active=True).all()
     today = datetime.utcnow().date()
+    staff = Staff.query.filter(Staff.is_active == True).all()
     
-    if request.method == 'POST':
-        staff_id = request.form.get('staff_id')
-        status = request.form.get('status')
-        
-        if not staff_id or not status:
-            flash('Invalid attendance data provided.', 'danger')
-            return redirect(url_for('staff_attendance'))
-        
-        # Validate status
-        if status not in ['present', 'late', 'absent']:
-            flash('Invalid attendance status.', 'danger')
-            return redirect(url_for('staff_attendance'))
-        
-        # Check if staff exists and is active
-        staff = Staff.query.filter_by(id=staff_id, is_active=True).first()
-        if not staff:
-            flash('Invalid staff member.', 'danger')
-            return redirect(url_for('staff_attendance'))
-        
-        # Check for existing attendance
-        existing_attendance = StaffAttendance.query.filter(
-            StaffAttendance.staff_id == staff_id,
-            db.func.date(StaffAttendance.date) == today
-        ).first()
-        
-        if existing_attendance:
-            flash('Attendance already marked for this staff member today.', 'warning')
-        else:
-            # Create new attendance record
-            attendance = StaffAttendance(
-                staff_id=staff_id,
-                status=status,
-                check_in=datetime.utcnow(),
-                date=datetime.utcnow()
-            )
-            
-            try:
-                db.session.add(attendance)
-                db.session.commit()
-                flash(f'Attendance marked as {status} for {staff.name}.', 'success')
-            except Exception as e:
-                db.session.rollback()
-                flash('Error marking attendance.', 'danger')
-                print(f"Error marking attendance: {str(e)}")
-    
-    # Get today's attendance for display
-    attendance_data = {
-        att.staff_id: att for att in StaffAttendance.query.filter(
-            db.func.date(StaffAttendance.date) == today
+    # Get today's attendance records
+    attendance_records = {
+        record.staff_id: record 
+        for record in StaffAttendance.query.filter(
+            db.func.date(StaffAttendance.check_in) == today
         ).all()
     }
     
-    staff_members_deactive = Staff.query.filter_by(is_active=False).all()
-
-
     # Calculate attendance statistics
-    total_staff = len(staff_members)
-    marked_attendance = len(attendance_data)
-    present_count = sum(1 for att in attendance_data.values() if att.status == 'present')
-    late_count = sum(1 for att in attendance_data.values() if att.status == 'late')
-    absent_count = sum(1 for att in attendance_data.values() if att.status == 'absent')
-    deactivated_count = sum(1 for staff in staff_members_deactive)
-    not_marked = total_staff - marked_attendance + deactivated_count
+    total_staff = len(staff)
+    present_count = sum(1 for record in attendance_records.values() if record.status == 'present')
+    late_count = sum(1 for record in attendance_records.values() if record.status == 'late')
+    absent_count = sum(1 for record in attendance_records.values() if record.status == 'absent')
+    not_marked = total_staff - (present_count + late_count + absent_count)
     
-    return render_template('staff/attendance.html',
-                         staff_members=staff_members,
-                         attendance_data=attendance_data,
-                         today=datetime.utcnow(),
-                         stats={
-                             'total': total_staff,
-                             'present': present_count,
-                             'late': late_count,
-                             'absent': absent_count,
-                             'not_marked': not_marked
-                         })
+    stats = {
+        'total': total_staff,
+        'present': present_count,
+        'late': late_count,
+        'absent': absent_count,
+        'not_marked': not_marked
+    }
+    
+    return render_template('staff/attendance.html', 
+                         staff_members=staff,
+                         attendance_records=attendance_records,
+                         today=today,
+                         stats=stats)
+
+@app.route('/staff/mark_attendance', methods=['POST'])
+@login_required
+def mark_staff_attendance():
+    if not check_moderator_attendance_access():
+        flash('Access denied. Moderator privileges required.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    staff_id = request.form.get('staff_id')
+    status = request.form.get('status')
+    
+    if not staff_id or not status:
+        flash('Invalid data provided.', 'danger')
+        return redirect(url_for('staff_attendance'))
+    
+    staff = User.query.get_or_404(staff_id)
+    if not staff.active:
+        flash('Cannot mark attendance for inactive staff.', 'danger')
+        return redirect(url_for('staff_attendance'))
+    
+    today = datetime.utcnow().date()
+    existing_attendance = Attendance.query.filter(
+        Attendance.staff_id == staff_id,
+        db.func.date(Attendance.check_in) == today
+    ).first()
+    
+    if existing_attendance:
+        flash('Attendance already marked for today.', 'info')
+    else:
+        attendance = Attendance(
+            staff_id=staff_id,
+            status=status,
+            check_in=datetime.utcnow()
+        )
+        db.session.add(attendance)
+        try:
+            db.session.commit()
+            flash('Attendance marked successfully.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash('Error marking attendance.', 'danger')
+            print(f"Error marking attendance: {str(e)}")
+    
+    return redirect(url_for('staff_attendance'))
 
 @app.route('/staff/payments', methods=['GET'])
 @login_required
@@ -878,4 +877,12 @@ def renew_membership(member_id):
             print(f"Error renewing membership: {str(e)}")
     
     plans = Plan.query.all()
-    return render_template('members/renew.html', member=member, plans=plans, today=today) 
+    return render_template('members/renew.html', member=member, plans=plans, today=today)
+
+@app.route('/staff/edit/<int:staff_id>', methods=['GET', 'POST'])
+@login_required
+def edit_staff(staff_id):
+    if not check_admin_access():
+        flash('Access denied. Admin privileges required.', 'danger')
+        return redirect(url_for('dashboard'))
+    # ... rest of the function remains the same ...
